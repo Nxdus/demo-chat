@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Hash, LogOut, Timer, Trash2 } from "lucide-react";
+import { Hash, LogOut, Timer, Trash2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   destroyRoom as requestDestroyRoom,
+  getClientAlias,
   getRoomStatus,
   joinRoom,
   leaveRoom,
@@ -52,6 +54,7 @@ export function ChatRoomHeader({
   const [remainingSeconds, setRemainingSeconds] = useState(ttlSeconds);
   const [isOwner, setIsOwner] = useState(false);
   const [isDestroying, setIsDestroying] = useState(false);
+  const [alias, setAlias] = useState<string | null>(null);
 
   useEffect(() => {
     let expiresAt = Date.now() + ttlSeconds * 1000;
@@ -106,20 +109,30 @@ export function ChatRoomHeader({
     const controller = new AbortController();
 
     async function registerRoomJoin() {
-      const data = await joinRoom(getClientIdentifier(), roomId, {
-        signal: controller.signal,
-      });
+      const identifier = getClientIdentifier();
+      const [joinData, aliasData] = await Promise.all([
+        joinRoom(identifier, roomId, {
+          signal: controller.signal,
+        }),
+        getClientAlias(identifier, roomId, {
+          signal: controller.signal,
+        }),
+      ]);
 
-      if (!data) {
+      if (!joinData) {
         return;
       }
 
-      if (data.isDestroyed) {
+      if (joinData.isDestroyed) {
         router.replace("/");
         return;
       }
 
-      setIsOwner(data.isOwner);
+      setIsOwner(joinData.isOwner);
+
+      if (aliasData) {
+        setAlias(aliasData.alias);
+      }
     }
 
     registerRoomJoin().catch((error: unknown) => {
@@ -165,6 +178,41 @@ export function ChatRoomHeader({
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex gap-2">
+          <div className="group relative flex-1 sm:flex-none">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="w-full sm:w-9"
+              aria-label="Show people in room"
+              aria-haspopup="dialog"
+            >
+              <Users />
+            </Button>
+            <div className="pointer-events-none absolute right-0 top-11 z-10 w-56 translate-y-1 rounded-md border bg-popover p-3 text-popover-foreground opacity-0 shadow-md transition group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+              <p className="text-xs font-medium text-muted-foreground">
+                Your alias in this room
+              </p>
+              <div className="mt-1 flex h-5 items-center justify-center">
+                {alias ? (
+                  <p className="truncate font-mono text-sm font-semibold">
+                    {alias}
+                  </p>
+                ) : (
+                  <Spinner className="text-muted-foreground" />
+                )}
+              </div>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="flex-1 sm:flex-none"
+            onClick={exitRoom}
+          >
+            <LogOut />
+          </Button>
           {isOwner ? (
             <Button
               type="button"
@@ -178,15 +226,6 @@ export function ChatRoomHeader({
 
             </Button>
           ) : null}
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            className="flex-1 sm:flex-none"
-            onClick={exitRoom}
-          >
-            <LogOut />
-          </Button>
         </div>
         <div
           className="flex w-full items-center justify-between gap-3 rounded-md border bg-card px-3 py-2 text-card-foreground sm:w-auto sm:min-w-48"
