@@ -5,7 +5,7 @@ coordination endpoints below. Configure the backend origin with
 `NEXT_PUBLIC_CHAT_API_BASE_URL`. When the variable is empty, requests are sent to
 the same origin.
 
-## POST /api/client-alias
+## POST /api/v1/client-alias
 
 Creates a stable public alias for one browser/client inside one room.
 
@@ -32,7 +32,7 @@ Requirements:
 - Generate the same alias for the same `identifier` and `roomId`.
 - Do not expose the raw client identifier to other clients.
 
-## POST /api/rooms
+## POST /api/v1/rooms
 
 Coordinates room ownership and destruction state.
 
@@ -104,7 +104,7 @@ Requirements:
 - Apply appropriate CORS policy when `NEXT_PUBLIC_CHAT_API_BASE_URL` points to a
   different origin.
 
-## GET /api/rooms/status
+## GET /api/v1/rooms/status
 
 Returns the current state for a room.
 
@@ -131,9 +131,9 @@ Requirements:
 - Return `404` when the room does not exist.
 - Return `isDestroyed: true` when the room has been destroyed.
 - `expiresAt` must be an ISO timestamp.
-- `messageCount` and `serverTime` are optional, but recommended.
+- `messageCount` and `serverTime` are required by the API PRD.
 
-## POST /api/messages
+## POST /api/v1/messages
 
 Sends a chat message to a room.
 
@@ -163,11 +163,11 @@ Requirements:
 - Return `400` when `identifier`, `roomId`, or `body` is missing or not a
   string.
 - Return `404` or `410` when the room does not exist or has been destroyed.
-- Use the same stable display alias as `POST /api/client-alias` for
+- Use the same stable display alias as `POST /api/v1/client-alias` for
   `senderName`.
 - Persist sent messages outside the frontend process.
 
-## GET /api/messages
+## GET /api/v1/messages
 
 Returns the message history for a room.
 
@@ -198,7 +198,7 @@ Requirements:
 - Return `404` or `410` when the room does not exist or has been destroyed.
 - Return messages sorted from oldest to newest.
 
-## GET /api/messages/stream
+## GET /api/v1/messages/stream
 
 Streams new room messages using Server-Sent Events.
 

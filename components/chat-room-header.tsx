@@ -20,6 +20,8 @@ type ChatRoomHeaderProps = {
   ttlSeconds: number;
 };
 
+const ROOM_STATUS_POLL_INTERVAL_MS = 3000;
+
 function formatRemainingTime(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -59,7 +61,7 @@ export function ChatRoomHeader({
   useEffect(() => {
     let expiresAt = Date.now() + ttlSeconds * 1000;
 
-    const intervalId = window.setInterval(() => {
+    const countdownIntervalId = window.setInterval(() => {
       const nextRemainingSeconds = Math.max(
         0,
         Math.ceil((expiresAt - Date.now()) / 1000),
@@ -93,15 +95,25 @@ export function ChatRoomHeader({
       setRemainingSeconds(secondsUntil(data.expiresAt));
     }
 
-    loadRoomStatus().catch((error: unknown) => {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return;
-      }
-    });
+    function pollRoomStatus() {
+      loadRoomStatus().catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      });
+    }
+
+    pollRoomStatus();
+
+    const statusIntervalId = window.setInterval(
+      pollRoomStatus,
+      ROOM_STATUS_POLL_INTERVAL_MS,
+    );
 
     return () => {
       controller.abort();
-      window.clearInterval(intervalId);
+      window.clearInterval(countdownIntervalId);
+      window.clearInterval(statusIntervalId);
     };
   }, [roomId, router, ttlSeconds]);
 
@@ -141,7 +153,9 @@ export function ChatRoomHeader({
       }
     });
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+    };
   }, [roomId, router]);
 
   async function exitRoom() {

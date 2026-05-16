@@ -1,4 +1,5 @@
 const CHAT_API_BASE_URL = process.env.NEXT_PUBLIC_CHAT_API_BASE_URL ?? "";
+const CHAT_API_PREFIX = "/api/v1";
 
 type RequestOptions = {
   signal?: AbortSignal;
@@ -29,8 +30,8 @@ export type ClientAliasResponse = {
 export type RoomStatusResponse = {
   expiresAt: string;
   isDestroyed: boolean;
-  messageCount?: number;
-  serverTime?: string;
+  messageCount: number;
+  serverTime: string;
 };
 
 export type RoomMessageResponse = {
@@ -53,6 +54,8 @@ export type SendMessageResponse = {
 
 const apiUrl = (path: string) =>
   CHAT_API_BASE_URL ? new URL(path, CHAT_API_BASE_URL).toString() : path;
+
+const apiPath = (path: string) => `${CHAT_API_PREFIX}${path}`;
 
 function apiUrlWithQuery(path: string, params: QueryParams) {
   const url = apiUrl(path);
@@ -93,11 +96,15 @@ export function getClientAlias(
   roomId: string,
   options?: RequestOptions,
 ) {
-  return post<ClientAliasResponse>("/api/client-alias", { identifier, roomId }, options);
+  return post<ClientAliasResponse>(
+    apiPath("/client-alias"),
+    { identifier, roomId },
+    options,
+  );
 }
 
 export function getRoomStatus(roomId: string, options?: RequestOptions) {
-  return get<RoomStatusResponse>("/api/rooms/status", { roomId }, options);
+  return get<RoomStatusResponse>(apiPath("/rooms/status"), { roomId }, options);
 }
 
 export function getRoomExpires(roomId: string, options?: RequestOptions) {
@@ -106,9 +113,9 @@ export function getRoomExpires(roomId: string, options?: RequestOptions) {
 
 export function getRoomMessages(
   roomId: string,
-  options?: RequestOptions
+  options?: RequestOptions,
 ) {
-  return get<RoomMessagesResponse>("/api/messages", { roomId }, options);
+  return get<RoomMessagesResponse>(apiPath("/messages"), { roomId }, options);
 }
 
 export function joinRoom(
@@ -116,18 +123,30 @@ export function joinRoom(
   roomId: string,
   options?: RequestOptions,
 ) {
-  return post<JoinRoomResponse>("/api/rooms", { action: "join", identifier, roomId }, options);
+  return post<JoinRoomResponse>(
+    apiPath("/rooms"),
+    { action: "join", identifier, roomId },
+    options,
+  );
 }
 
 export function destroyRoom(
   identifier: string,
-  roomId: string
+  roomId: string,
 ) {
-  return post<DestroyRoomResponse>("/api/rooms", { action: "destroy", identifier, roomId });
+  return post<DestroyRoomResponse>(apiPath("/rooms"), {
+    action: "destroy",
+    identifier,
+    roomId,
+  });
 }
 
 export function leaveRoom(identifier: string, roomId: string) {
-  return post<LeaveRoomResponse>("/api/rooms", { action: "leave", identifier, roomId });
+  return post<LeaveRoomResponse>(apiPath("/rooms"), {
+    action: "leave",
+    identifier,
+    roomId,
+  });
 }
 
 export function sendMessage(
@@ -136,14 +155,20 @@ export function sendMessage(
   body: string,
   options?: RequestOptions,
 ) {
-  return post<SendMessageResponse>("/api/messages", { identifier, roomId, body }, options);
+  return post<SendMessageResponse>(
+    apiPath("/messages"),
+    { identifier, roomId, body },
+    options,
+  );
 }
 
 export function subscribeRoomMessages(
   roomId: string,
   onMessage: RoomMessageHandler,
 ) {
-  const events = new EventSource(apiUrlWithQuery("/api/messages/stream", { roomId }));
+  const events = new EventSource(
+    apiUrlWithQuery(apiPath("/messages/stream"), { roomId }),
+  );
 
   events.addEventListener("message", (event) => {
     onMessage(JSON.parse(event.data) as RoomMessageResponse);

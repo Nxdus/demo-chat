@@ -125,22 +125,36 @@ export function ChatRoom({ roomId }: ChatRoomProps) {
       >
         {messages.length > 0 ? (
           <div className="flex flex-col gap-3">
-            {messages.map((message) => (
-              <article
-                key={message.id}
-                className="ml-auto flex max-w-[85%] flex-col items-end gap-1 sm:max-w-[70%]"
-              >
-                <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-                  <span className="max-w-36 truncate font-mono">
-                    {message.senderName}
-                  </span>
-                  <time>{message.sentAt}</time>
-                </div>
-                <p className="whitespace-pre-wrap wrap-break-word rounded-2xl rounded-br-sm bg-primary px-4 py-2 text-sm leading-6 text-primary-foreground">
-                  {message.body}
-                </p>
-              </article>
-            ))}
+            {messages.map((message) => {
+              const isOwnMessage = message.senderName === username;
+
+              return (
+                <article
+                  key={message.id}
+                  className={
+                    isOwnMessage
+                      ? "ml-auto flex max-w-[85%] flex-col items-end gap-1 sm:max-w-[70%]"
+                      : "mr-auto flex max-w-[85%] flex-col items-start gap-1 sm:max-w-[70%]"
+                  }
+                >
+                  <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+                    <span className="max-w-36 truncate font-mono">
+                      {message.senderName}
+                    </span>
+                    <time>{message.sentAt}</time>
+                  </div>
+                  <p
+                    className={
+                      isOwnMessage
+                        ? "whitespace-pre-wrap wrap-break-word rounded-2xl rounded-br-sm bg-primary px-4 py-2 text-sm leading-6 text-primary-foreground"
+                        : "whitespace-pre-wrap wrap-break-word rounded-2xl rounded-bl-sm bg-muted px-4 py-2 text-sm leading-6 text-foreground"
+                    }
+                  >
+                    {message.body}
+                  </p>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="flex h-full min-h-80 items-center justify-center text-sm text-muted-foreground">
